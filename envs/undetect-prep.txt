@@ -1,0 +1,11 @@
+# Data preparation, LINCS/Tahoe-100M kernels and network nulls. Python 3.12.
+# Install: python3.12 -m venv "$UNDETECT_DATA/envs/undetect-prep" && "$UNDETECT_DATA/envs/undetect-prep/bin/pip" install -r envs/undetect-prep.txt
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.14.1+cpu
+numpy==2.2.6
+scipy==1.16.3
+pandas==2.3.3
+pyarrow==21.0.0
+h5py==3.14.0
+scikit-learn==1.7.2
+rdkit==2026.3.6

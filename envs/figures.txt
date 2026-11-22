@@ -1,0 +1,4 @@
+# Paper figures (scripts/figures). Any recent Python 3.
+numpy
+pandas
+matplotlib
