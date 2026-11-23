@@ -7,7 +7,7 @@ zero where a view is missing). Fusion weights = mean of the five `cache_v1` fold
 Writes <outdir>/fig1_pipeline_source.json (kernels, weights, annotations, Morgan on-bits, atoms and bonds with 2D
 coordinates) and
 <outdir>/fig1_pipeline_source.csv (every plotted kernel value).
-Run: $UNDETECT_DATA/envs/undetect/bin/python -I scripts/figures/fig1_cards_data.py [outdir]
+Run: pixi run python -I scripts/figures/fig1_cards_data.py [outdir]
 """
 import os as _os  # noqa: E402
 UNDETECT_DATA = _os.environ.get("UNDETECT_DATA", "data")  # data root (README)

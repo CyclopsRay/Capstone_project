@@ -9,7 +9,7 @@
 ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
-ENV=$UNDETECT_DATA/envs/undetect-prep
+ENV=$UNDETECT_ROOT/.pixi/envs/prep
 date --iso-8601=seconds; hostname
 "$ENV/bin/python" -c "import numpy, pandas, h5py; print('numpy', numpy.__version__, 'pandas', pandas.__version__, 'h5py', h5py.__version__)"
 "$ENV/bin/python" -I $UNDETECT_ROOT/scripts/prep_xpert_sdst.py ${EXTRA:-}

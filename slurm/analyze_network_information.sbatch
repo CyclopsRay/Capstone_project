@@ -13,7 +13,7 @@ ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # RECOMB study E1/E7 (PLAN.md Phase 6): control-ladder information test, one (slice, network) per task.
-ENV_ROOT=$UNDETECT_DATA/envs/undetect-prep
+ENV_ROOT=$UNDETECT_ROOT/.pixi/envs/prep
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-4} OPENBLAS_NUM_THREADS=${SLURM_CPUS_PER_TASK:-4}
 SLICES=(P2-24 P1-24 T-5)
 NETS=(string_physical400 string_functional700 biogrid huri primekg omnipath collectri signaling_tf)

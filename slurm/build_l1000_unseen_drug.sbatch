@@ -12,7 +12,7 @@ ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # Pre-registered L1000 unseen-drug slices P1-24, P1-6, P2-24 (report/10_09_record.md).
-ENV_ROOT=$UNDETECT_DATA/envs/undetect-prep
+ENV_ROOT=$UNDETECT_ROOT/.pixi/envs/prep
 date --iso-8601=seconds; hostname; "${ENV_ROOT}/bin/python" --version
 "${ENV_ROOT}/bin/python" $UNDETECT_ROOT/scripts/build_l1000_unseen_drug.py
 date --iso-8601=seconds

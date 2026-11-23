@@ -1,0 +1,47 @@
+# Settings of the analysis. Change a setting here, not in the code.
+# Read by the workflow (workflow/Snakefile) and the demo scripts (scripts/demo/).
+#
+# `pixi run reproduce` runs the demo: UnDetect, unchanged, on a simulated
+# benchmark of the same shape as the paper's data, in a few minutes on a laptop.
+# The full paper run (real data, Slurm cluster) is described in README.md.
+
+demo:
+  # Data root of the demo run, the paper's $UNDETECT_DATA: derived/ and results/
+  # below it have the same layout as in the full run.
+  data_root: data/demo
+  # Tables for the report
+  results: results/demo
+  # Simulation seed; the backbone seed is undetect.seed
+  seed: 2027
+
+  # Simulated drug-blind benchmark (scripts/demo/simulate_benchmark.py)
+  simulation:
+    compound_table: data/raw/clue/compoundinfo_beta.txt
+    genes: 978                 # L1000 landmark genes, as in the paper
+    moa_classes: 24            # compounds come from this many mechanism-of-action classes
+    compounds_per_class: 10    # 24 x 10 = 240 real compounds
+    cell_lines: 8
+    plates_per_line: 6
+    lines_per_compound: [3, 8] # each compound is profiled in 3 to 8 lines
+    cell_painting_share: 0.6   # share of compounds with a Cell Painting profile
+    morph_features: 64
+    gene_programs: 20          # compound effects lie in this many gene programs
+    # How much each compound view contributes to the simulated compound effect
+    view_weights: {chem: 0.4, tgt: 0.2, moa: 0.25, morph: 0.15}
+    # Standard deviations (per gene) of the parts of a response
+    context_sd: 1.0            # nonlinear function of the control profile
+    plate_sd: 0.5              # shared by the samples of one assay plate
+    compound_sd: 1.0           # compound effect, shared by all lines
+    line_compound_sd: 0.4      # compound effect specific to one line
+    line_sensitivity_sd: 0.3   # log-scale spread of the lines' overall sensitivity
+    gate_strength: 0.3         # per-gene rescaling by the control's top principal components
+    noise_sd: 1.0
+    split_seed: 131419         # the benchmark's compound split rule (prep_xpert_sdst.py)
+
+  # UnDetect (scripts/cache_undetect.py, scripts/stage2_context.py)
+  undetect:
+    seed: 1729                 # backbone seed of the paper's final run
+    epochs: 100                # the paper: 500, with early stopping
+    patience: 10               # the paper: 50
+    folds: [0, 1, 2, 3, 4]
+    threads_per_fold: 2

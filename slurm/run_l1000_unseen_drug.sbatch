@@ -13,7 +13,7 @@ export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # Unseen-drug benchmark on L1000 (pre-registered 2026-10-03, report/10_09_record.md).
 # SLICE=P1-24|P1-6|P2-24, SPLIT=ik14|scaffold, EXTRA= further args.
-ENV_ROOT=$UNDETECT_DATA/envs/undetect-prep
+ENV_ROOT=$UNDETECT_ROOT/.pixi/envs/prep
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-16} OPENBLAS_NUM_THREADS=${SLURM_CPUS_PER_TASK:-16} MKL_NUM_THREADS=${SLURM_CPUS_PER_TASK:-16}
 date --iso-8601=seconds; hostname; "${ENV_ROOT}/bin/python" --version
 "${ENV_ROOT}/bin/python" -c 'import numpy, scipy, pandas, sklearn; print("numpy", numpy.__version__, "scipy", scipy.__version__, "pandas", pandas.__version__, "sklearn", sklearn.__version__)'
