@@ -19,7 +19,7 @@ cd Capstone_project
 pixi run reproduce
 ```
 
-`pixi run reproduce` installs the locked environment, downloads 23 MB of data, runs the pipeline and writes the
+`pixi run reproduce` installs the locked environment, downloads 4.6 MB of data, runs the pipeline and writes the
 report `reports/undetect-demo.html`. The [Reproduce](.github/workflows/reproduce.yml) GitHub Action does the same on
 a fresh machine after every push, without any cache, so its run time is the time a new user needs.
 
@@ -101,8 +101,8 @@ hold out whole compounds, in the files and formats that `scripts/prep_xpert_sdst
 compounds are real (240 compounds from 24 mechanism-of-action classes of the CLUE compound table, with their
 structures, targets and mechanisms); their Cell Painting profiles and all responses are simulated, with a known
 answer. Snakemake runs `scripts/cache_undetect.py` and `scripts/stage2_context.py` on each fold, scores them against
-baselines and the noise ceiling, and renders the report. The report also shows the published models' scores on the
-real benchmark, from the archive of Bai et al. 2026. The numbers of the demo describe the simulation, not the paper.
+baselines and the noise ceiling, and renders the report. Only UnDetect is trained; the baselines are means of the
+training responses, computed while scoring. The numbers of the demo describe the simulation, not the paper.
 
 Every setting is in `config/config.yaml`. Change one and run `pixi run reproduce` again: Snakemake reruns only the
 steps that depend on it.
@@ -225,9 +225,8 @@ Open an issue on [GitHub](https://github.com/CyclopsRay/Capstone_project/issues)
 | Data | Source | Used by |
 |---|---|---|
 | compound annotations (structure, targets, MOA) | CLUE LINCS2020 `compoundinfo_beta.txt` | demo; `scripts/build_drug_features.py` |
-| published models' benchmark metrics | Bai et al. 2026, Zenodo [10.5281/zenodo.22095049](https://doi.org/10.5281/zenodo.22095049), `benchmark_metrics.zip` | demo report; `scripts/figures/fig2_benchmark.py` |
 | drug-blind benchmark (XPert L1000 SDST release) | Zenodo [10.5281/zenodo.17182939](https://doi.org/10.5281/zenodo.17182939) / figshare 28955141, `processed_data.zip` (MD5 `4a58bc01…`) | `repro/dpb/slurm/fetch_xpert.sbatch`, `scripts/prep_xpert_sdst.py` |
-| released predictions of the seven published models | Zenodo [10.5281/zenodo.22095049](https://doi.org/10.5281/zenodo.22095049) (v2.0.0) | `slurm/dpb_fetch_released.sbatch`, `scripts/prep_published_preds.py` |
+| released predictions and metrics of the seven published models | Zenodo [10.5281/zenodo.22095049](https://doi.org/10.5281/zenodo.22095049) (v2.0.0) | `slurm/dpb_fetch_released.sbatch`, `scripts/prep_published_preds.py` |
 | drug-perturbation-benchmark code | `github.com/baijinming97/drug-perturbation-benchmark`, commit `55edbfe` | clone to `repro/dpb/upstream` (prediction index) and to `$UNDETECT_DATA/repro/dpb_bench` (retraining) |
 | LINCS L1000 Level 5 | GEO GSE92742 (Phase I), GSE70138 (Phase II) | `scripts/build_l1000_unseen_drug.py` |
 | Tahoe-100M pseudobulk deltas | `tahoebio/tahoe-de-rhaister`, rev. `c7963cf` | `scripts/build_tahoe_unseen_drug.py` |
@@ -242,10 +241,10 @@ to `$UNDETECT_DATA/results`. Each script's docstring names its inputs and output
 
 ## Data availability
 
-All data used here are public; none are redistributed in this repository. The demo downloads the CLUE compound table
-and the benchmark metrics of Bai et al. 2026 from the sources above and simulates everything else with
-`scripts/demo/simulate_benchmark.py`. The paper's data are available from the sources in the table above, under
-their own licenses and terms of use (`metadata/sources.tsv`).
+All data used here are public; none are redistributed in this repository. The demo downloads the CLUE compound
+table from the source above and simulates everything else with `scripts/demo/simulate_benchmark.py`. The
+paper's data are available from the sources in the table above, under their own licenses and terms of use
+(`metadata/sources.tsv`).
 
 ## How to cite
 

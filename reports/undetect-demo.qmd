@@ -22,7 +22,6 @@ import json
 import platform
 import subprocess
 import sys
-import zipfile
 from importlib.metadata import version
 from pathlib import Path
 
@@ -87,7 +86,7 @@ What is real and what is simulated:
 
 - **Real:** the `{python} data["drugs"]` compounds, `{python} demo["simulation"]["compounds_per_class"]` from
   each of the `{python} data["moa_classes"]` most common MOA classes of the CLUE LINCS2020 compound table
-  [@clue2020], with their structures, targets and MOA; the published models' scores in the next section.
+  [@clue2020], with their structures, targets and MOA.
 - **Simulated** (seed `{python} demo["seed"]`, settings in `config/config.yaml`): the Cell Painting profiles of
   `{python} data["with_cell_painting"]` compounds, the control profiles of `{python} data["plates"]` assay plates in
   `{python} data["cells"]` cell lines, and every response. A response is a context term (a fixed nonlinear function
@@ -99,31 +98,6 @@ What is real and what is simulated:
 
 The split follows the benchmark's rule (`scripts/prep_xpert_sdst.py`): every compound is in the test set of exactly
 one fold, every cell line is seen in training.
-
-## The real benchmark: published models barely use the compound
-
-The published models' scores on the real benchmark come from the archive of @bai2026archive, downloaded and checked
-against its checksum by the pipeline. Setting a model's drug input to zero changes its PCC~DEG~ very little
-(@tbl-published), which is the observation UnDetect starts from.
-
-```{python}
-#| label: tbl-published
-#| tbl-cap: "PCC~DEG~ of the seven published models on the real drug-blind benchmark, with their drug input (Full) and with it set to zero (Zero): mean and standard deviation over the five folds, from `statistics/primary_comparisons.csv` of @bai2026archive."
-with zipfile.ZipFile(cfg["published_metrics"]) as zf:
-    pc = pd.read_csv(zf.open("benchmark_metrics/statistics/primary_comparisons.csv"))
-z = pc[(pc.metric_key == "pcc_deg_mean") & (pc.contrast == "Full - Zero")].set_index("model")
-full = z[[f"fold_{i}_full" for i in range(5)]].to_numpy()
-zero = z[[f"fold_{i}_comparator" for i in range(5)]].to_numpy()
-pub = pd.DataFrame({"Full": full.mean(1), "SD (Full)": full.std(1, ddof=1),
-                    "Zero": zero.mean(1), "SD (Zero)": zero.std(1, ddof=1),
-                    "Full − Zero": (full - zero).mean(1)}, index=z.index.rename("Model"))
-pub = pub.sort_values("Full", ascending=False)
-biggest = pub["Full − Zero"].idxmax()
-pub.round(3)
-```
-
-The largest gain from the drug input is `{python} f3(pub.loc[biggest, "Full − Zero"])` (`{python} biggest`);
-`{python} int((pub["Full − Zero"] < 0).sum())` of the `{python} len(pub)` models score higher without it.
 
 ## Results on the simulated benchmark
 
@@ -138,9 +112,11 @@ tab = pd.DataFrame(
 tab
 ```
 
-The drug-free backbone learns the context from the control profile alone and reaches a PCC~DEG~ of
-`{python} f3(bb["deg_mean"])`, against `{python} f3(plate["deg_mean"])` for the plate response baseline, which
-predicts the mean training response of the sample's plate. The compound term of UnDetect's first stage raises this to
+The pipeline trains only UnDetect. The cell-line mean and the plate response baseline are not models: they are
+the mean training response of the sample's cell line or plate, computed while scoring, and the noise ceiling is the
+simulated response without its noise. UnDetect's drug-free backbone learns the context from the control profile
+alone and reaches a PCC~DEG~ of `{python} f3(bb["deg_mean"])`, against `{python} f3(plate["deg_mean"])` for the
+plate response baseline. The compound term of UnDetect's first stage raises this to
 `{python} f3(first["deg_mean"])`, and the context-gated second stage to `{python} f3(ud["deg_mean"])`
 (@tbl-scores, @fig-scores). The plate-centred score PCC~plate~ removes what plate-mates share: there the backbone
 scores `{python} f3(bb["plate_mean"])` and UnDetect `{python} f3(ud["plate_mean"])`, so the gain comes from the
@@ -225,8 +201,8 @@ epochs at most (the paper: 500, with early stopping on the validation compounds)
 
 ## Data availability
 
-The CLUE compound table [@clue2020] and the benchmark archive of @bai2026archive are downloaded by
-`scripts/download_data.py`, which checks them against the checksums in `metadata/checksums.sha256`;
+The CLUE compound table [@clue2020] is downloaded by `scripts/download_data.py`, which checks it against the
+checksums in `metadata/checksums.sha256`;
 `metadata/sources.tsv` lists every data source of the demo and of the full paper run, with licenses. The simulated
 data are made by `scripts/demo/simulate_benchmark.py` and can be regenerated at any time. The paper's data are
 public; the full run is described in the repository's `README.md`.

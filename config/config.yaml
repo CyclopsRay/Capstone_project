@@ -45,7 +45,3 @@ demo:
     patience: 10               # the paper: 50
     folds: [0, 1, 2, 3, 4]
     threads_per_fold: 2
-
-# Benchmark metrics of the seven published models (Bai et al. 2026), shown in
-# the report for comparison with the real benchmark
-published_metrics: data/raw/zenodo-22095049/benchmark_metrics.zip

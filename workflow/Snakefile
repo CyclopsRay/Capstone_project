@@ -34,7 +34,6 @@ rule download:
     """Raw data of the demo (metadata/sources.tsv), checked against metadata/checksums.sha256; read-only."""
     output:
         SIM["compound_table"],
-        config["published_metrics"],
     log:
         f"{LOGS}/download.log",
     shell:
@@ -119,7 +118,6 @@ rule report:
     input:
         "reports/undetect-demo.qmd",
         "scripts/figures/style.py",
-        config["published_metrics"],
         f"{DERIVED}/truth.npz",
         rules.score.output,
     output:
