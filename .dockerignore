@@ -4,6 +4,4 @@
 .git/
 data/
 results/
-figures/
 .snakemake/
-*.sif

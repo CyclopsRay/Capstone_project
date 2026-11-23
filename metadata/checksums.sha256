@@ -1,2 +1,2 @@
-# SHA-256 of the raw files of the demo run. Check with: shasum -a 256 -c metadata/checksums.sha256
+# SHA-256 of the raw data. Check with: shasum -a 256 -c metadata/checksums.sha256
 a71fca6de41dcc46a5063858be7e04155f3c09832c8b3fb35814f03db8d9fdff  data/raw/clue/compoundinfo_beta.txt

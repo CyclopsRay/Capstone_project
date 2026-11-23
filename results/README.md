@@ -1,12 +1,11 @@
 # results
 
-Outputs of the demo run (`pixi run reproduce`), regenerated on every run and not
-committed:
+Made by `pixi run reproduce`, not committed:
 
-- `demo/scores.csv`: PCC_DEG and PCC_plate of each method on each test fold
-- `demo/weights.csv`: the view weights UnDetect learned, next to the simulated ones
-- `demo/summary.json`: five-fold means, data sizes and settings, read by the report
-- `demo/logs/`: one log file per workflow step
-
-The full paper run writes its results under `$UNDETECT_DATA/results` instead
-(README.md).
+- `scores.csv`: PCC_DEG by fold, split (train, valid, test) and stage of the model; stage `ceiling` is the simulated
+  response without its noise
+- `view_weights.csv`: the weight of each compound view, learned and simulated, by fold
+- `summary.json`: means and standard deviations over folds, data sizes and settings
+- `folds/fold_<f>/`: per fold, the score of every sample, the settings chosen on the validation compounds and the
+  test predictions
+- `logs/`: one log per step

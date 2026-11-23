@@ -11,9 +11,9 @@
 #
 # Build from the project folder (lesson 08):
 #   docker build --platform linux/amd64 -f containers/Dockerfile \
-#     --build-arg ENV_NAME=default -t undetect:0.1.0 .
+#     --build-arg ENV_NAME=default -t undetect-demo:0.1.0 .
 # Run a command with the project folder mounted at /work:
-#   docker run --rm -v "$PWD":/work -w /work undetect:0.1.0 snakemake --cores all
+#   docker run --rm -v "$PWD":/work -w /work undetect-demo:0.1.0 snakemake --cores all
 
 ARG PIXI_VERSION=0.83.0
 
