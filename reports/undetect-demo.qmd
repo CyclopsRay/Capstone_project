@@ -1,0 +1,237 @@
+---
+title: "UnDetect on a simulated drug-blind benchmark"
+subtitle: "Demo run of the reproducible UnDetect pipeline"
+author: "Yuqi Lei, Hanzhe Liang, Keqin Peng, Jun Wen"
+date: today
+format:
+  html:
+    embed-resources: true
+    toc: true
+    code-fold: true
+    code-summary: "Code"
+jupyter: python3
+execute:
+  warning: false
+bibliography: references.bib
+---
+
+```{python}
+#| label: setup
+import hashlib
+import json
+import platform
+import subprocess
+import sys
+import zipfile
+from importlib.metadata import version
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import yaml
+
+sys.path.insert(0, "scripts/figures")
+import style  # the paper's palette and fonts (scripts/figures/style.py)
+from style import CTX, INK2, OURS, OURS_LIGHT, PLATE, VIEW, GRID, LINE, plt
+
+%matplotlib inline
+
+cfg = yaml.safe_load(Path("config/config.yaml").read_text())
+demo = cfg["demo"]
+res = Path(demo["results"])
+scores = pd.read_csv(res / "scores.csv")
+weights = pd.read_csv(res / "weights.csv")
+summary = json.loads((res / "summary.json").read_text())
+arms, data = summary["arms"], summary["data"]
+truth = np.load(Path(demo["data_root"]) / "derived/xpert_sdst/v1/truth.npz")
+var = {k: float(truth[k].var()) for k in ("context", "compound", "noise")}
+share = {k: v / sum(var.values()) for k, v in var.items()}
+
+ud, first, bb = arms["ctx_pc"], arms["pool_kta"], arms["mlp"]
+plate, ceiling = arms["plate_baseline"], arms["noise_ceiling"]
+f3 = lambda x: f"{x:.3f}"  # noqa: E731
+pct = lambda x: f"{100 * x:.0f}%"  # noqa: E731
+```
+
+## Summary
+
+UnDetect [@lei2027undetect] predicts the transcriptional response to a compound that was never profiled in any cell
+line. A drug-free backbone network predicts, from the paired control profile, the response that any compound would
+show in that sample; a multi-view kernel over chemical structure, targets, mechanism of action (MOA) and Cell Painting
+morphology then transfers the residual responses of profiled compounds to unprofiled ones.
+
+This report comes from the demo run of the pipeline (`pixi run reproduce`). The paper's own scripts ran unchanged, on
+a simulated benchmark of the same shape as the paper's data, with real compounds and a known answer. On it, UnDetect
+reached a PCC~DEG~ of `{python} f3(ud["deg_mean"])` (standard deviation `{python} f3(ud["deg_sd"])` over the five
+compound-disjoint test folds), `{python} f3(ud["deg_mean"] - bb["deg_mean"])` above its own drug-free backbone
+(`{python} f3(bb["deg_mean"])`). The ceiling set by the simulated noise is `{python} f3(ceiling["deg_mean"])`. These
+numbers describe the simulation, not the paper's results.
+
+## Why a demo
+
+The paper's benchmark, the XPert L1000 drug-blind release [@guo2025xpert] used by @bai2026archive, has 78,453
+control and treated L1000 profiles [@subramanian2017] of 8,276 compounds in 164 cell lines. It is a 1.6 GB download,
+and the paper's runs take hours on a Slurm cluster. The demo keeps the shape of the problem and makes it small:
+
+```{python}
+#| label: tbl-shape
+#| tbl-cap: "The paper's benchmark and the simulated benchmark of the demo. Both use 978 landmark genes and five folds that hold out whole compounds."
+shape = pd.DataFrame(
+    {"Paper (XPert L1000 drug-blind)": ["78,453", "8,276", "164", "978", "5"],
+     "Demo (simulated)": [f"{data['n']:,}", f"{data['drugs']:,}", f"{data['cells']}", f"{data['genes']}", "5"]},
+    index=["Samples (control, treated pairs)", "Compounds", "Cell lines", "Genes", "Compound-disjoint folds"])
+shape
+```
+
+What is real and what is simulated:
+
+- **Real:** the `{python} data["drugs"]` compounds, `{python} demo["simulation"]["compounds_per_class"]` from
+  each of the `{python} data["moa_classes"]` most common MOA classes of the CLUE LINCS2020 compound table
+  [@clue2020], with their structures, targets and MOA; the published models' scores in the next section.
+- **Simulated** (seed `{python} demo["seed"]`, settings in `config/config.yaml`): the Cell Painting profiles of
+  `{python} data["with_cell_painting"]` compounds, the control profiles of `{python} data["plates"]` assay plates in
+  `{python} data["cells"]` cell lines, and every response. A response is a context term (a fixed nonlinear function
+  of the control profile) plus a plate effect, plus a compound effect, plus noise. The compound effect is drawn
+  from a Gaussian process whose covariance combines the four compound kernels with known weights, so compounds that
+  are similar in a view respond alike. Of the response variance, the context and plate account for
+  `{python} pct(share["context"])`, the compound effect for `{python} pct(share["compound"])` and noise for
+  `{python} pct(share["noise"])`.
+
+The split follows the benchmark's rule (`scripts/prep_xpert_sdst.py`): every compound is in the test set of exactly
+one fold, every cell line is seen in training.
+
+## The real benchmark: published models barely use the compound
+
+The published models' scores on the real benchmark come from the archive of @bai2026archive, downloaded and checked
+against its checksum by the pipeline. Setting a model's drug input to zero changes its PCC~DEG~ very little
+(@tbl-published), which is the observation UnDetect starts from.
+
+```{python}
+#| label: tbl-published
+#| tbl-cap: "PCC~DEG~ of the seven published models on the real drug-blind benchmark, with their drug input (Full) and with it set to zero (Zero): mean and standard deviation over the five folds, from `statistics/primary_comparisons.csv` of @bai2026archive."
+with zipfile.ZipFile(cfg["published_metrics"]) as zf:
+    pc = pd.read_csv(zf.open("benchmark_metrics/statistics/primary_comparisons.csv"))
+z = pc[(pc.metric_key == "pcc_deg_mean") & (pc.contrast == "Full - Zero")].set_index("model")
+full = z[[f"fold_{i}_full" for i in range(5)]].to_numpy()
+zero = z[[f"fold_{i}_comparator" for i in range(5)]].to_numpy()
+pub = pd.DataFrame({"Full": full.mean(1), "SD (Full)": full.std(1, ddof=1),
+                    "Zero": zero.mean(1), "SD (Zero)": zero.std(1, ddof=1),
+                    "Full − Zero": (full - zero).mean(1)}, index=z.index.rename("Model"))
+pub = pub.sort_values("Full", ascending=False)
+biggest = pub["Full − Zero"].idxmax()
+pub.round(3)
+```
+
+The largest gain from the drug input is `{python} f3(pub.loc[biggest, "Full − Zero"])` (`{python} biggest`);
+`{python} int((pub["Full − Zero"] < 0).sum())` of the `{python} len(pub)` models score higher without it.
+
+## Results on the simulated benchmark
+
+```{python}
+#| label: tbl-scores
+#| tbl-cap: "Scores on the simulated benchmark, mean ± standard deviation over the five test folds. PCC~DEG~: Pearson correlation of true and predicted response across genes, averaged over test samples. PCC~plate~: the same after subtracting the mean training response of the sample's plate, on samples whose plate has training samples."
+order = ["cell_line_mean", "plate_baseline", "mlp", "pool_kta", "ctx_pc", "noise_ceiling"]
+tab = pd.DataFrame(
+    {"PCC_DEG": [f"{arms[a]['deg_mean']:.3f} ± {arms[a]['deg_sd']:.3f}" for a in order],
+     "PCC_plate": [f"{arms[a]['plate_mean']:.3f} ± {arms[a]['plate_sd']:.3f}" for a in order]},
+    index=pd.Index([arms[a]["label"] for a in order], name="Method"))
+tab
+```
+
+The drug-free backbone learns the context from the control profile alone and reaches a PCC~DEG~ of
+`{python} f3(bb["deg_mean"])`, against `{python} f3(plate["deg_mean"])` for the plate response baseline, which
+predicts the mean training response of the sample's plate. The compound term of UnDetect's first stage raises this to
+`{python} f3(first["deg_mean"])`, and the context-gated second stage to `{python} f3(ud["deg_mean"])`
+(@tbl-scores, @fig-scores). The plate-centred score PCC~plate~ removes what plate-mates share: there the backbone
+scores `{python} f3(bb["plate_mean"])` and UnDetect `{python} f3(ud["plate_mean"])`, so the gain comes from the
+compounds, not from the plates.
+
+```{python}
+#| label: fig-scores
+#| fig-cap: "PCC~DEG~ (left) and PCC~plate~ (right) on the simulated benchmark. Bars: mean over the five compound-disjoint test folds; error bars: standard deviation over folds; dots: single folds."
+#| fig-alt: "Two horizontal bar charts with one bar per method: cell-line mean, plate response baseline, drug-free backbone, UnDetect first stage, UnDetect and the noise ceiling. The left chart shows PCC_DEG, the right chart PCC_plate, each with error bars and one dot per fold."
+colour = {"cell_line_mean": LINE, "plate_baseline": PLATE, "mlp": CTX, "pool_kta": OURS_LIGHT, "ctx_pc": OURS,
+          "noise_ceiling": "#ffffff"}
+fig, axes = plt.subplots(1, 2, figsize=(7.5, 3.0), sharey=True)
+for ax, metric, title in zip(axes, ("deg", "plate"), ("PCC$_\\mathrm{DEG}$", "PCC$_\\mathrm{plate}$")):
+    for y, a in enumerate(order):
+        v = scores.loc[scores.arm == a, metric].to_numpy()
+        ax.barh(y, v.mean(), xerr=v.std(ddof=1), color=colour[a], edgecolor=INK2 if a == "noise_ceiling" else colour[a],
+                linewidth=0.6, height=0.62, error_kw=dict(ecolor=INK2, elinewidth=0.7, capsize=2), zorder=2)
+        ax.scatter(v, np.full(len(v), y) + np.linspace(-0.15, 0.15, len(v)), s=6, color=INK2, zorder=3)
+    ax.set_yticks(range(len(order)), [arms[a]["label"] for a in order])
+    ax.set_xlabel(title)
+    ax.grid(axis="x", color=GRID, lw=0.6)
+    ax.set_axisbelow(True)
+    ax.set_xlim(left=0)
+axes[0].invert_yaxis()
+fig.tight_layout()
+plt.show()
+```
+
+UnDetect weights the four compound views by how well each view's kernel aligns with the training compounds' residual
+responses (kernel-target alignment). @fig-weights sets these learned weights next to the weights used to simulate the
+compound effects.
+
+```{python}
+#| label: fig-weights
+#| fig-cap: "Weight of each compound view: the weight used in the simulation and the weight UnDetect learned on the training compounds of each fold (mean, error bar: standard deviation over the five folds)."
+#| fig-alt: "Grouped bar chart for four compound views: structure, targets, mechanism of action and Cell Painting. For each view, one bar shows the simulated weight and one the weight UnDetect learned, with error bars."
+names = {"chem": "Structure", "tgt": "Targets", "moa": "MOA", "morph": "Cell Painting"}
+vw = summary["view_weights"]
+x = np.arange(len(vw))
+fig, ax = plt.subplots(figsize=(5.0, 2.8))
+ax.bar(x - 0.2, [vw[v]["simulated"] for v in vw], width=0.38, color="#ffffff",
+       edgecolor=[VIEW[v] for v in vw], hatch="////", linewidth=0.8, label="simulated", zorder=2)
+ax.bar(x + 0.2, [vw[v]["learned_mean"] for v in vw], yerr=[vw[v]["learned_sd"] for v in vw], width=0.38,
+       color=[VIEW[v] for v in vw], error_kw=dict(ecolor=INK2, elinewidth=0.7, capsize=2), label="learned", zorder=2)
+ax.set_xticks(x, [names[v] for v in vw])
+ax.set_ylabel("View weight")
+ax.grid(axis="y", color=GRID, lw=0.6)
+ax.set_axisbelow(True)
+from matplotlib.patches import Patch
+ax.legend(handles=[Patch(facecolor="#ffffff", edgecolor=INK2, hatch="////", label="simulated"),
+                   Patch(facecolor=INK2, label="learned by UnDetect")], frameon=False, fontsize=8)
+fig.tight_layout()
+plt.show()
+```
+
+Alignment measures how well each view's kernel on its own matches the residual responses; it is not an estimate of
+the weights in the simulation, so the two need not agree. Here the largest learned weight goes to
+`{python} names[max(vw, key=lambda v: vw[v]["learned_mean"])]` and the largest simulated weight to
+`{python} names[max(vw, key=lambda v: vw[v]["simulated"])]`.
+
+## Software
+
+All software comes from the Pixi environment `default`, installed from `pixi.lock`, which records the exact build of
+every package for Linux and macOS. The report was rendered with:
+
+```{python}
+#| label: tbl-software
+#| tbl-cap: "Versions of the main software, read when the report was rendered."
+import matplotlib, rdkit, scipy, sklearn, torch  # noqa: E401
+quarto = subprocess.run(["quarto", "--version"], capture_output=True, text=True).stdout.strip()
+lock = hashlib.sha256(Path("pixi.lock").read_bytes()).hexdigest()
+software = pd.DataFrame(
+    {"Version": [platform.python_version(), np.__version__, scipy.__version__, pd.__version__, sklearn.__version__,
+                 torch.__version__, rdkit.__version__, matplotlib.__version__, version("snakemake"), quarto]},
+    index=pd.Index(["Python", "NumPy", "SciPy", "pandas", "scikit-learn", "PyTorch", "RDKit", "Matplotlib",
+                    "Snakemake", "Quarto"], name="Software"))
+software
+```
+
+Platform: `{python} platform.platform()`; `pixi.lock` SHA-256 `{python} lock[:12]`. PyTorch ran on the CPU with `{python} demo["undetect"]["epochs"]` backbone
+epochs at most (the paper: 500, with early stopping on the validation compounds).
+
+## Data availability
+
+The CLUE compound table [@clue2020] and the benchmark archive of @bai2026archive are downloaded by
+`scripts/download_data.py`, which checks them against the checksums in `metadata/checksums.sha256`;
+`metadata/sources.tsv` lists every data source of the demo and of the full paper run, with licenses. The simulated
+data are made by `scripts/demo/simulate_benchmark.py` and can be regenerated at any time. The paper's data are
+public; the full run is described in the repository's `README.md`.
+
+## References
+
+::: {#refs}
+:::

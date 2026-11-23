@@ -1,0 +1,8 @@
+# Quarto settings of this project.
+project:
+  # Run the code in reports from the repository root, so paths such as
+  # "config/config.yaml" work in reports exactly as in the scripts.
+  execute-dir: project
+  # `quarto render` without a file name renders only the reports.
+  render:
+    - reports/*.qmd
