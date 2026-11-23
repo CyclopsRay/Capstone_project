@@ -49,7 +49,7 @@ test = {s: pcc[s]["test"] for s in pcc}
 
 ## Summary
 
-This report comes from one run of the pipeline. UnDetect [@lei2027undetect] predicts how the expression of 978
+This report comes from one run of the pipeline. UnDetect [@lei2026undetect] predicts how the expression of 978
 genes changes when a compound treats a cell line, for compounds the model has never seen. Trained and tested in five
 folds on simulated data, it reached a test PCC~DEG~ of `{python} f3(test["final"]["mean"])` (standard deviation
 `{python} f3(test["final"]["sd"])` over folds), against `{python} f3(test["backbone"]["mean"])` for its drug-free

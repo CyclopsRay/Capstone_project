@@ -24,3 +24,18 @@ keywords:
   - workflow
   - transcriptomics
   - drug response prediction
+references:
+  - type: article
+    title: "Predicting Transcriptional Responses to Unseen Compounds through Context Modeling and Multi-View Transfer"
+    authors:
+      - given-names: "Yuqi"
+        family-names: "Lei"
+      - given-names: "Hanzhe"
+        family-names: "Liang"
+      - given-names: "Keqin"
+        family-names: "Peng"
+      - given-names: "Jun"
+        family-names: "Wen"
+    journal: "bioRxiv"
+    year: 2026
+    doi: "10.64898/2026.11.05.764505"
