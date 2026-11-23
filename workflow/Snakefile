@@ -1,28 +1,21 @@
-# Demo pipeline of UnDetect: download -> simulate -> UnDetect (two stages, per fold) -> scores -> report.
+# The demo pipeline: download -> simulate -> train and test UnDetect on 5 folds -> evaluate -> report.
 #
-#   pixi run reproduce          # = snakemake --cores all, from the repository root
-#   pixi run snakemake -n       # dry run: which jobs would run, and why
+#   pixi run reproduce       # = snakemake --cores all, from the repository root
+#   pixi run dry-run         # which steps would run now, and why
 #
-# Settings come from config/config.yaml. Snakemake reruns a step when its inputs,
-# code or settings (params) change, and only that step and what depends on it.
-# The paper's scripts run unchanged: they read and write under $UNDETECT_DATA,
-# which each rule points at the demo data root, as the job scripts in slurm/
-# point it at the real data on the cluster.
+# Settings come from config/config.yaml. Snakemake reruns a step when its
+# inputs, code or settings change, and then everything that depends on it.
 
 configfile: "config/config.yaml"
 
-DEMO = config["demo"]
-SIM = DEMO["simulation"]
-UD = DEMO["undetect"]
-ROOT = DEMO["data_root"]
-DERIVED = f"{ROOT}/derived/xpert_sdst/v1"
-CELL_PAINTING = f"{ROOT}/derived/l1000_unseen_drug/cell_painting_features.npz"
-HYBRID = f"{ROOT}/results/sdst_hybrid"
-RESULTS = DEMO["results"]
+DATA = config["data"]["processed"]
+RESULTS = config["results"]
+FOLDS = config["model"]["folds"]
 LOGS = f"{RESULTS}/logs"
-SIMULATED = [f"{DERIVED}/sdst.npz", f"{DERIVED}/drugs.tsv", CELL_PAINTING]
-# torch, MKL and OpenBLAS use the cores Snakemake gives the job, no more
-THREADS = "OMP_NUM_THREADS={threads} MKL_NUM_THREADS={threads} OPENBLAS_NUM_THREADS={threads}"
+SIMULATED = [f"{DATA}/{f}" for f in ("responses.npz", "compounds.tsv", "cell_painting.npz", "truth.npz",
+                                     "manifest.json")]
+FOLD_OUTPUTS = ["scores.csv", "settings.json", "test_predictions.npz"]
+EVALUATION = [f"{RESULTS}/{f}" for f in ("scores.csv", "view_weights.csv", "summary.json")]
 
 
 rule all:
@@ -31,95 +24,65 @@ rule all:
 
 
 rule download:
-    """Raw data of the demo (metadata/sources.tsv), checked against metadata/checksums.sha256; read-only."""
+    """Compound annotations from CLUE, checked against metadata/checksums.sha256 and made read-only."""
     output:
-        SIM["compound_table"],
+        config["data"]["compound_table"],
     log:
         f"{LOGS}/download.log",
     shell:
-        "python -I scripts/download_data.py > {log} 2>&1"
+        "python scripts/download_data.py > {log} 2>&1"
 
 
 rule simulate:
-    """A benchmark of the same shape as XPert L1000 SDST, with real compounds and simulated responses."""
+    """Real compounds, simulated responses with a known answer."""
     input:
-        SIM["compound_table"],
+        config["data"]["compound_table"],
     output:
         SIMULATED,
-        f"{DERIVED}/truth.npz",
-        f"{DERIVED}/manifest.json",
     params:
-        seed=DEMO["seed"],
-        simulation=SIM,  # a changed setting reruns this step and everything after it
+        simulation=config["simulation"],  # a changed setting reruns this step and everything after it
     log:
         f"{LOGS}/simulate.log",
     shell:
-        "python -I scripts/demo/simulate_benchmark.py > {log} 2>&1"
+        "python scripts/simulate_data.py > {log} 2>&1"
 
 
-rule undetect_backbone:
-    """UnDetect, first stage (scripts/cache_undetect.py): drug-free backbone, multi-view kernel, compound terms."""
+rule train:
+    """Train UnDetect on one fold and score its training, validation and test compounds."""
     input:
         SIMULATED,
     output:
-        f"{HYBRID}/cache_v1/fold_{{fold}}/cache.npz",
-        f"{HYBRID}/cache_v1/fold_{{fold}}/summary.json",
+        [f"{RESULTS}/folds/fold_{{fold}}/{f}" for f in FOLD_OUTPUTS],
     params:
-        root=ROOT,
-        seed=UD["seed"],
-        epochs=UD["epochs"],
-        patience=UD["patience"],
-    threads: UD["threads_per_fold"]
+        model=config["model"],
+    threads: config["model"]["threads_per_fold"]
     log:
-        f"{LOGS}/undetect_backbone_fold{{fold}}.log",
+        f"{LOGS}/train_fold{{fold}}.log",
     shell:
-        THREADS + " UNDETECT_DATA={params.root} python -I scripts/cache_undetect.py --folds {wildcards.fold}"
-        " --seed {params.seed} --epochs {params.epochs} --patience {params.patience} --tag cache_v1 > {log} 2>&1"
+        # PyTorch and the math libraries use the cores Snakemake gives the job, no more
+        "OMP_NUM_THREADS={threads} MKL_NUM_THREADS={threads} OPENBLAS_NUM_THREADS={threads} "
+        "python scripts/train.py --fold {wildcards.fold} > {log} 2>&1"
 
 
-rule undetect_context:
-    """UnDetect, second stage (scripts/stage2_context.py --v2): the compound term gated by the control's context."""
+rule evaluate:
+    """Scores of the five folds by split and stage, and the learned view weights."""
     input:
         SIMULATED,
-        f"{HYBRID}/cache_v1/fold_{{fold}}/cache.npz",
-        f"{HYBRID}/cache_v1/fold_{{fold}}/summary.json",
+        expand(f"{RESULTS}/folds/fold_{{fold}}/{{f}}", fold=FOLDS, f=FOLD_OUTPUTS),
     output:
-        f"{HYBRID}/stage2_v2/fold_{{fold}}/pred_test.npz",
-        f"{HYBRID}/stage2_v2/fold_{{fold}}/summary.json",
-    params:
-        root=ROOT,
-    threads: UD["threads_per_fold"]
+        EVALUATION,
     log:
-        f"{LOGS}/undetect_context_fold{{fold}}.log",
+        f"{LOGS}/evaluate.log",
     shell:
-        THREADS + " UNDETECT_DATA={params.root} python -I scripts/stage2_context.py --v2 --folds {wildcards.fold}"
-        " --cache cache_v1 --tag stage2_v2 > {log} 2>&1"
-
-
-rule score:
-    """PCC_DEG and PCC_plate of UnDetect, its backbone, two baselines and the noise ceiling; view weights."""
-    input:
-        f"{DERIVED}/truth.npz",
-        f"{DERIVED}/manifest.json",
-        expand(f"{HYBRID}/cache_v1/fold_{{fold}}/cache.npz", fold=UD["folds"]),
-        expand(f"{HYBRID}/stage2_v2/fold_{{fold}}/pred_test.npz", fold=UD["folds"]),
-    output:
-        f"{RESULTS}/scores.csv",
-        f"{RESULTS}/weights.csv",
-        f"{RESULTS}/summary.json",
-    log:
-        f"{LOGS}/score.log",
-    shell:
-        "python -I scripts/demo/score_demo.py > {log} 2>&1"
+        "python scripts/evaluate.py > {log} 2>&1"
 
 
 rule report:
     """The Quarto report: every number, table and figure is computed from the results when it renders."""
     input:
         "reports/undetect-demo.qmd",
-        "scripts/figures/style.py",
-        f"{DERIVED}/truth.npz",
-        rules.score.output,
+        EVALUATION,
+        expand(f"{RESULTS}/folds/fold_{{fold}}/test_predictions.npz", fold=FOLDS),
     output:
         "reports/undetect-demo.html",
     log:
