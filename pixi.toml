@@ -1,104 +1,37 @@
-# Software environments of this project, managed by Pixi (https://pixi.sh).
-# Pixi installs them from pixi.lock, which records the exact build of every
-# package on every platform: commit both files. Add a package with
-# `pixi add <name>` (default environment) or `pixi add --feature <f> <name>`.
-#
-# Environments (see [environments] at the end):
-#   default  CPU; laptop, CI and the CPU jobs of the paper. `pixi run reproduce`.
-#   cluster  Linux + NVIDIA GPU (CUDA 11.8); the GPU jobs in slurm/ and repro/deepce/.
-#   prep     data preparation, LINCS / Tahoe-100M kernels and network nulls.
-# They replace the three pip requirement files of the original repository
-# (envs/undetect.txt, envs/undetect-prep.txt, envs/figures.txt), with the same
-# versions; docs/decisions.md lists the differences.
+# Software environment of this project, managed by Pixi (https://pixi.sh).
+# Pixi installs it from pixi.lock, which records the exact build of every
+# package for every platform: commit both files. Add a package with
+# `pixi add <name>`; list the tasks with `pixi task list`.
 [workspace]
-name = "undetect"
-description = "UnDetect: transcriptional responses to unseen compounds, made reproducible"
+name = "undetect-demo"
+description = "A reproducible pipeline that trains and tests UnDetect on simulated data"
 authors = ["Yuqi Lei", "Hanzhe Liang", "Keqin Peng", "Jun Wen"]
 channels = ["conda-forge", "bioconda"]
-# Tested: Linux x86-64 (GitHub Actions, the cluster) and macOS on Apple silicon.
-platforms = [
-  "linux-64",
-  "osx-arm64",
-  # Linux with an NVIDIA driver that supports CUDA 11.8: the cluster's GPU nodes
-  { name = "linux-64-cuda", platform = "linux-64", cuda = "11.8" },
-]
+# Tested on Linux x86-64 (GitHub Actions) and macOS on Apple silicon
+platforms = ["linux-64", "osx-arm64"]
 version = "0.1.0"
 license = "MIT"
 repository = "https://github.com/CyclopsRay/Capstone_project"
-requires-pixi = ">=0.82.0"   # for the platform entry with `cuda`
+requires-pixi = ">=0.60.0"
 
-# Default feature: the paper's `undetect` environment (envs/undetect.txt), same
-# versions. Every environment except `prep` contains it.
 [dependencies]
 python = "3.12.*"
 numpy = "1.26.4.*"
-scipy = "1.13.1.*"
 pandas = "2.2.3.*"
-scikit-learn = "1.5.2.*"
+pytorch = { version = "2.4.1.*", build = "cpu_generic*" }   # CPU build, without MKL: a smaller download
 rdkit = "2024.03.6.*"
-
-# CPU build of PyTorch 2.4.1 (the paper's final numbers use the CPU backbone run)
-[feature.cpu]
-platforms = ["linux-64", "osx-arm64"]
-
-[feature.cpu.dependencies]
-pytorch = { version = "2.4.1.*", build = "cpu_generic*" }   # no MKL: a smaller download
-
-# Figures, report and workflow (the original envs/figures.txt plus Quarto and Snakemake)
-[feature.report.dependencies]
-matplotlib-base = ">=3.9,<3.11"   # without the Qt GUI libraries
 pyyaml = ">=6"
+matplotlib-base = ">=3.9,<3.11"   # without the Qt GUI libraries
+snakemake-minimal = ">=9"          # bioconda
 quarto = ">=1.9"
-ipykernel = ">=6"
+ipykernel = ">=6"                  # Quarto runs the report's Python code in a Jupyter kernel
 nbclient = ">=0.10"
 nbformat = ">=5.10"
-snakemake-minimal = ">=9"
-snakemake-executor-plugin-slurm = ">=1"   # run the workflow's steps as Slurm jobs
+pytest = ">=8"
 
-# Tasks: `pixi task list` lists them, `pixi run <task>` runs one.
-[feature.report.tasks]
-reproduce = { cmd = "snakemake --cores all", description = "Run the demo pipeline end to end: download, simulate, UnDetect, scores, report" }
+[tasks]
+reproduce = { cmd = "snakemake --cores all", description = "Run the whole pipeline: download, simulate, train and test on 5 folds, evaluate, report" }
 dry-run = { cmd = "snakemake --cores all --dry-run", description = "List the steps that `reproduce` would run now, and why" }
-download = { cmd = "python -I scripts/download_data.py", description = "Download the demo's raw data and check it against the recorded checksums" }
-report = { cmd = "quarto render reports/undetect-demo.qmd", description = "Render the report again from the results of `reproduce`" }
-test = { cmd = "python -m unittest discover -s tests -v", description = "Run the unit tests" }
-export-envs = { cmd = "pixi workspace export conda-environment -e default -n undetect envs/default.yml && pixi workspace export conda-environment -e prep -p linux-64 -n undetect-prep envs/prep.yml", description = "Export conda environment files to envs/ for people without Pixi" }
-check = { cmd = "python -c \"import numpy, pandas, rdkit, torch; print('numpy', numpy.__version__, 'pandas', pandas.__version__, 'rdkit', rdkit.__version__, 'torch', torch.__version__)\" && quarto --version && snakemake --version", description = "Check that the tools work" }
-paper-figures = { cmd = "python -I scripts/figures/fig1_cards_data.py && python -I scripts/figures/fig1_cp_profiles.py && python -I scripts/figures/fig1_cards.py && python -I scripts/figures/fig2_benchmark.py figures && python -I scripts/figures/fig_views.py figures && python -I scripts/figures/fig_appendix.py figures", description = "Redraw the paper's figures into figures/ from the full results ($UNDETECT_DATA/results, made on the cluster)" }
-
-# CUDA 11.8 build of PyTorch 2.4.1 for the GPU nodes, as in the paper
-[feature.cuda]
-platforms = ["linux-64-cuda"]
-
-[feature.cuda.dependencies]
-pytorch = { version = "2.4.1.*", build = "cuda118*" }
-# node2vec gene embeddings of the DeepCE benchmark (repro/deepce/make_n2v_genes.py)
-gensim = "4.4.0.*"
-numba = "0.68.0.*"
-
-[feature.cuda.pypi-dependencies]
-pecanpy = "==2.0.9"
-
-[feature.cuda.tasks]
-check-gpu = { cmd = "python -c \"import torch; print('torch', torch.__version__, 'CUDA', torch.version.cuda, 'GPU available:', torch.cuda.is_available())\"", description = "Check that PyTorch sees the GPU (run on a GPU node)" }
-
-# The paper's `undetect-prep` environment (envs/undetect-prep.txt), same versions
-# (Linux only: it reads the full raw data, which lives on the cluster.)
-[feature.prep]
-platforms = ["linux-64"]
-
-[feature.prep.dependencies]
-python = "3.12.*"
-pytorch = { version = "2.14.1.*", build = "cpu*" }
-numpy = "2.2.6.*"
-scipy = "1.16.3.*"
-pandas = "2.3.3.*"
-pyarrow = "21.0.0.*"
-h5py = "3.14.0.*"
-scikit-learn = "1.7.2.*"
-rdkit = "2026.03.6.*"
-
-[environments]
-default = ["cpu", "report"]
-cluster = ["cuda"]
-prep = { features = ["prep"], no-default-feature = true }
+download = { cmd = "python scripts/download_data.py", description = "Download the raw data and check it against the recorded checksums" }
+report = { cmd = "quarto render reports/undetect-demo.qmd", description = "Render the report again from the current results" }
+test = { cmd = "pytest -q tests", description = "Run the unit tests" }
