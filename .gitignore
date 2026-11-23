@@ -1,8 +1,44 @@
-__pycache__/
-*.py[cod]
-*.out
-/data/
-/logs/
+# Pixi environments are rebuilt from pixi.lock, never committed
+.pixi/*
+!.pixi/config.toml
+
+# Data are downloaded (metadata/sources.tsv) or regenerated, never committed.
+# Raw data: data/raw/ (read-only). Demo run: data/demo/. Full run ($UNDETECT_DATA
+# = data/ by default): derived/, results/, logs/, repro/ and the old venvs in envs/.
+data/raw/
+data/demo/
+data/derived/
+data/results/
+data/logs/
+data/repro/
+data/envs/
+
+# Results and figures are regenerated (`pixi run reproduce`, `pixi run paper-figures`)
+results/*
+!results/README.md
 /figures/
+/logs/
+*.out
+
+# Code of other projects, cloned for the full run (README.md)
 /repro/deepce/upstream/
 /repro/dpb/upstream/
+
+# Container images (attach them to a release, not to Git)
+containers/*.tar.gz
+containers/*.sif
+
+# Workflow manager state
+.snakemake/
+
+# Quarto and Jupyter
+/.quarto/
+reports/*.html
+reports/*_files/
+**/*.quarto_ipynb
+.ipynb_checkpoints/
+
+# Python and OS clutter
+__pycache__/
+*.py[cod]
+.DS_Store
