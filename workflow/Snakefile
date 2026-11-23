@@ -1,0 +1,130 @@
+# Demo pipeline of UnDetect: download -> simulate -> UnDetect (two stages, per fold) -> scores -> report.
+#
+#   pixi run reproduce          # = snakemake --cores all, from the repository root
+#   pixi run snakemake -n       # dry run: which jobs would run, and why
+#
+# Settings come from config/config.yaml. Snakemake reruns a step when its inputs,
+# code or settings (params) change, and only that step and what depends on it.
+# The paper's scripts run unchanged: they read and write under $UNDETECT_DATA,
+# which each rule points at the demo data root, as the job scripts in slurm/
+# point it at the real data on the cluster.
+
+configfile: "config/config.yaml"
+
+DEMO = config["demo"]
+SIM = DEMO["simulation"]
+UD = DEMO["undetect"]
+ROOT = DEMO["data_root"]
+DERIVED = f"{ROOT}/derived/xpert_sdst/v1"
+CELL_PAINTING = f"{ROOT}/derived/l1000_unseen_drug/cell_painting_features.npz"
+HYBRID = f"{ROOT}/results/sdst_hybrid"
+RESULTS = DEMO["results"]
+LOGS = f"{RESULTS}/logs"
+SIMULATED = [f"{DERIVED}/sdst.npz", f"{DERIVED}/drugs.tsv", CELL_PAINTING]
+# torch, MKL and OpenBLAS use the cores Snakemake gives the job, no more
+THREADS = "OMP_NUM_THREADS={threads} MKL_NUM_THREADS={threads} OPENBLAS_NUM_THREADS={threads}"
+
+
+rule all:
+    input:
+        "reports/undetect-demo.html",
+
+
+rule download:
+    """Raw data of the demo (metadata/sources.tsv), checked against metadata/checksums.sha256; read-only."""
+    output:
+        SIM["compound_table"],
+        config["published_metrics"],
+    log:
+        f"{LOGS}/download.log",
+    shell:
+        "python -I scripts/download_data.py > {log} 2>&1"
+
+
+rule simulate:
+    """A benchmark of the same shape as XPert L1000 SDST, with real compounds and simulated responses."""
+    input:
+        SIM["compound_table"],
+    output:
+        SIMULATED,
+        f"{DERIVED}/truth.npz",
+        f"{DERIVED}/manifest.json",
+    params:
+        seed=DEMO["seed"],
+        simulation=SIM,  # a changed setting reruns this step and everything after it
+    log:
+        f"{LOGS}/simulate.log",
+    shell:
+        "python -I scripts/demo/simulate_benchmark.py > {log} 2>&1"
+
+
+rule undetect_backbone:
+    """UnDetect, first stage (scripts/cache_undetect.py): drug-free backbone, multi-view kernel, compound terms."""
+    input:
+        SIMULATED,
+    output:
+        f"{HYBRID}/cache_v1/fold_{{fold}}/cache.npz",
+        f"{HYBRID}/cache_v1/fold_{{fold}}/summary.json",
+    params:
+        root=ROOT,
+        seed=UD["seed"],
+        epochs=UD["epochs"],
+        patience=UD["patience"],
+    threads: UD["threads_per_fold"]
+    log:
+        f"{LOGS}/undetect_backbone_fold{{fold}}.log",
+    shell:
+        THREADS + " UNDETECT_DATA={params.root} python -I scripts/cache_undetect.py --folds {wildcards.fold}"
+        " --seed {params.seed} --epochs {params.epochs} --patience {params.patience} --tag cache_v1 > {log} 2>&1"
+
+
+rule undetect_context:
+    """UnDetect, second stage (scripts/stage2_context.py --v2): the compound term gated by the control's context."""
+    input:
+        SIMULATED,
+        f"{HYBRID}/cache_v1/fold_{{fold}}/cache.npz",
+        f"{HYBRID}/cache_v1/fold_{{fold}}/summary.json",
+    output:
+        f"{HYBRID}/stage2_v2/fold_{{fold}}/pred_test.npz",
+        f"{HYBRID}/stage2_v2/fold_{{fold}}/summary.json",
+    params:
+        root=ROOT,
+    threads: UD["threads_per_fold"]
+    log:
+        f"{LOGS}/undetect_context_fold{{fold}}.log",
+    shell:
+        THREADS + " UNDETECT_DATA={params.root} python -I scripts/stage2_context.py --v2 --folds {wildcards.fold}"
+        " --cache cache_v1 --tag stage2_v2 > {log} 2>&1"
+
+
+rule score:
+    """PCC_DEG and PCC_plate of UnDetect, its backbone, two baselines and the noise ceiling; view weights."""
+    input:
+        f"{DERIVED}/truth.npz",
+        f"{DERIVED}/manifest.json",
+        expand(f"{HYBRID}/cache_v1/fold_{{fold}}/cache.npz", fold=UD["folds"]),
+        expand(f"{HYBRID}/stage2_v2/fold_{{fold}}/pred_test.npz", fold=UD["folds"]),
+    output:
+        f"{RESULTS}/scores.csv",
+        f"{RESULTS}/weights.csv",
+        f"{RESULTS}/summary.json",
+    log:
+        f"{LOGS}/score.log",
+    shell:
+        "python -I scripts/demo/score_demo.py > {log} 2>&1"
+
+
+rule report:
+    """The Quarto report: every number, table and figure is computed from the results when it renders."""
+    input:
+        "reports/undetect-demo.qmd",
+        "scripts/figures/style.py",
+        config["published_metrics"],
+        f"{DERIVED}/truth.npz",
+        rules.score.output,
+    output:
+        "reports/undetect-demo.html",
+    log:
+        f"{LOGS}/report.log",
+    shell:
+        "quarto render reports/undetect-demo.qmd > {log} 2>&1"
