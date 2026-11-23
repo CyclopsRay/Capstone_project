@@ -15,7 +15,7 @@ export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # RECOMB study E3: DeepCE with node2vec gene vectors from STRING functional >= 400 and its nulls
 # (make_n2v_genes.py, job 296800). One array task per graph variant, seeds 0-2 in sequence, 60 epochs.
-ENV=$UNDETECT_DATA/envs/undetect
+ENV=$UNDETECT_ROOT/.pixi/envs/cluster
 KINDS=(real rewired labels er); K=${KINDS[${SLURM_ARRAY_TASK_ID:-0}]}
 GV=$UNDETECT_DATA/repro/deepce/gene_variants
 date --iso-8601=seconds; hostname; nvidia-smi --query-gpu=name,driver_version --format=csv,noheader

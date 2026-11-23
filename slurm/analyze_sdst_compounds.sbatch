@@ -13,7 +13,7 @@ export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # Compound interpretation on the drug-blind benchmark (no training): fused-kernel vs chemistry pairs, and per-drug
 # gain vs nearest training neighbour from the v3 predictions. Deterministic (seed 0 in the script).
-ENV=$UNDETECT_DATA/envs/undetect
+ENV=$UNDETECT_ROOT/.pixi/envs/cluster
 export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 MKL_NUM_THREADS=8
 date --iso-8601=seconds; hostname
 "$ENV/bin/python" -c "import numpy, pandas, rdkit, torch; print('numpy', numpy.__version__, 'pandas', pandas.__version__, 'rdkit', rdkit.__version__, 'torch', torch.__version__)"

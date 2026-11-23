@@ -10,7 +10,7 @@ fig_app_transfer
 fig_app_platemates
   PCC_plate by the number of training plate-mates (backbone, XPert, UnDetect). Source:
   results/sdst_hybrid/plate_mate_count/bins.csv (`analyze_plate_mate_count.py`, report §10.6).
-Run: $UNDETECT_DATA/envs/undetect/bin/python -I scripts/figures/fig_appendix.py [outdir]
+Run: pixi run python -I scripts/figures/fig_appendix.py [outdir]
 """
 import os as _os  # noqa: E402
 UNDETECT_DATA = _os.environ.get("UNDETECT_DATA", "data")  # data root (README)
