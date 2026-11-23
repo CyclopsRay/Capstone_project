@@ -2,14 +2,14 @@
 """Download the raw data of the demo run and check it against metadata/checksums.sha256.
 
 Every source is listed in metadata/sources.tsv (URL, provider, license, the provider's checksum). This script
-downloads the rows whose `run` is `demo` (about 23 MB) into data/raw/, checks each file against the provider's MD5
+downloads the rows whose `run` is `demo` (one file, 4.6 MB) into data/raw/, checks each file against the provider's MD5
 and against our SHA-256 in metadata/checksums.sha256, and makes it read-only: raw data is read, never edited.
 A file that is already there with the right checksum is not downloaded again.
 
 The `full` rows (the paper's data, about 11 GB plus the code of two benchmarks) are downloaded on the cluster by the
 job scripts named in the `used_by` column; see README.md.
 
-    python scripts/download_data.py           # download and check the demo inputs
+    python scripts/download_data.py           # download and check the demo's input
     python scripts/download_data.py --check   # only check what is there
 """
 from __future__ import annotations

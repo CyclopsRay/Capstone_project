@@ -51,8 +51,9 @@ the reproducible version, so:
   path, not a copy of it.
 - The backbone trains for at most 100 epochs (the paper: 500, patience 50) so the
   whole run takes about two minutes. Everything else uses the paper's settings.
-- The report also shows the published models' scores on the real benchmark
-  (Bai et al. 2026, public, MIT), the observation the method starts from.
+- Only UnDetect is trained (Yuki's decision, 2026-11-23). Its scores sit next
+  to two reference predictions that are not models (the mean training response
+  of the sample's cell line and of its plate) and the noise ceiling.
 
 Committing the paper's own result summaries, so that the demo redraws the paper's
 figures, was considered and not done: the paper is under review, and redrawing
