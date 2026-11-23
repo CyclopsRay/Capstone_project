@@ -21,7 +21,7 @@ the same rows; report/11_06_report.md §4, §6.3); results/sdst_hybrid/published
 11_06 §4.1); (d) repro/deepce/results/{baselines,xline_kernel/deepce_split,mlp_multimodal}/summary.json,
 ppi_seed{0,1,2} (report §4.2, §4.6; reported values: Pham et al. 2021 Table 1 as transcribed in
 report/10_09_report.md §5.1).
-Run: $UNDETECT_DATA/envs/undetect/bin/python -I scripts/figures/fig2_benchmark.py [outdir]
+Run: pixi run python -I scripts/figures/fig2_benchmark.py [outdir]
 """
 import os as _os  # noqa: E402
 UNDETECT_DATA = _os.environ.get("UNDETECT_DATA", "data")  # data root (README)

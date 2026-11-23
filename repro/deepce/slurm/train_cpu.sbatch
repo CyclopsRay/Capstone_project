@@ -13,7 +13,7 @@ export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # DeepCE reproduction + gene-feature ablation on CPU (GPU QOS full): the four gene variants of one
 # seed run in parallel, 8 threads each. repro/deepce is gitignored.
-ENV=$UNDETECT_DATA/envs/undetect
+ENV=$UNDETECT_ROOT/.pixi/envs/cluster
 SEED=${SEED:-0}; EPOCHS=${EPOCHS:-100}
 date --iso-8601=seconds; hostname; nproc
 "$ENV/bin/python" -c "import torch, rdkit, numpy; print('torch', torch.__version__, 'rdkit', rdkit.__version__, 'numpy', numpy.__version__)"

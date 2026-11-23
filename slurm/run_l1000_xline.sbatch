@@ -12,7 +12,7 @@ ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # Cross-line multimodal kernel model for unseen drugs (exploratory sanity check, 2026-10-28).
-ENV_ROOT=$UNDETECT_DATA/envs/undetect-prep
+ENV_ROOT=$UNDETECT_ROOT/.pixi/envs/prep
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-8} OPENBLAS_NUM_THREADS=${SLURM_CPUS_PER_TASK:-8}
 date --iso-8601=seconds; hostname; "${ENV_ROOT}/bin/python" --version
 "${ENV_ROOT}/bin/python" -c "import numpy, scipy, pandas; print('numpy', numpy.__version__, 'scipy', scipy.__version__, 'pandas', pandas.__version__)"

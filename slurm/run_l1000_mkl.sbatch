@@ -12,7 +12,7 @@ ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # Integrated-model step 1 (PLAN.md Phase 7): multiple-kernel KRR with tiers and view nulls.
-ENV_ROOT=$UNDETECT_DATA/envs/undetect-prep
+ENV_ROOT=$UNDETECT_ROOT/.pixi/envs/prep
 export OMP_NUM_THREADS=${SLURM_CPUS_PER_TASK:-8} OPENBLAS_NUM_THREADS=${SLURM_CPUS_PER_TASK:-8}
 date --iso-8601=seconds; hostname; "${ENV_ROOT}/bin/python" --version
 cd $UNDETECT_ROOT/scripts

@@ -13,7 +13,7 @@ export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # RECOMB study E3 on CPU (GPU node gpu-05 broken, GPU QOS full): DeepCE with node2vec gene vectors from
 # STRING functional >= 400 and its nulls; the four variants of one seed in parallel, 8 threads each.
-ENV=$UNDETECT_DATA/envs/undetect
+ENV=$UNDETECT_ROOT/.pixi/envs/cluster
 GV=$UNDETECT_DATA/repro/deepce/gene_variants
 SEED=${SEED:-0}
 date --iso-8601=seconds; hostname; nproc

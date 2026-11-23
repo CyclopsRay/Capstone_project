@@ -12,7 +12,7 @@ ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # RDKit standardization + Morgan/MACCS/RDKit-2D/scaffolds + target/MOA sets (unseen-drug branch).
-ENV_ROOT=$UNDETECT_DATA/envs/undetect-prep
+ENV_ROOT=$UNDETECT_ROOT/.pixi/envs/prep
 date --iso-8601=seconds; hostname; "${ENV_ROOT}/bin/python" --version
 "${ENV_ROOT}/bin/python" $UNDETECT_ROOT/scripts/build_drug_features.py
 date --iso-8601=seconds

@@ -13,7 +13,7 @@ export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # Context x compound sanity checks on the drug-blind benchmark (no network training): line-similarity structure of
 # compound responses, oracle headroom from v3 saved predictions, linear drug-free backbones. Deterministic (seed 0).
-ENV=$UNDETECT_DATA/envs/undetect
+ENV=$UNDETECT_ROOT/.pixi/envs/cluster
 export OMP_NUM_THREADS=8 OPENBLAS_NUM_THREADS=8 MKL_NUM_THREADS=8
 date --iso-8601=seconds; hostname
 "$ENV/bin/python" -c "import numpy, pandas; print('numpy', numpy.__version__, 'pandas', pandas.__version__)"

@@ -12,7 +12,7 @@ ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # LINCS Cell Painting (A549 48 h) per-compound morphology features, joined to L1000 InChIKeys.
-ENV_ROOT=$UNDETECT_DATA/envs/undetect-prep
+ENV_ROOT=$UNDETECT_ROOT/.pixi/envs/prep
 date --iso-8601=seconds; hostname; "${ENV_ROOT}/bin/python" --version
 "${ENV_ROOT}/bin/python" $UNDETECT_ROOT/scripts/build_cell_painting_features.py
 date --iso-8601=seconds

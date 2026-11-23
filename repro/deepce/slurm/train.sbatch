@@ -13,7 +13,7 @@ ROOT="${UNDETECT_ROOT:-${SLURM_SUBMIT_DIR:-$PWD}}"   # repository root (README)
 export UNDETECT_ROOT="$ROOT" UNDETECT_DATA="${UNDETECT_DATA:-$ROOT/data}"
 set -euo pipefail
 # DeepCE reproduction + gene-feature ablation (repro/deepce, gitignored). Array index -> (variant, seed).
-ENV=$UNDETECT_DATA/envs/undetect
+ENV=$UNDETECT_ROOT/.pixi/envs/cluster
 VARIANTS=(ppi shuffled random onehot)
 i=${SLURM_ARRAY_TASK_ID:-0}
 VARIANT=${VARIANT:-${VARIANTS[$((i % 4))]}}
