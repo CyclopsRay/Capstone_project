@@ -1,12 +1,9 @@
 # scripts
 
-- The paper's code (`*.py` here): UnDetect, the benchmarks, analyses and data
-  preparation. Each script's docstring names its inputs and outputs. They read
-  and write under `$UNDETECT_DATA` (default `data/`) and run from the repository
-  root, for example `pixi run python scripts/stage2_context.py --v2`.
-- `figures/`: the paper's figures (`pixi run paper-figures`), with the shared style
-  in `figures/style.py`.
-- `demo/`: the demo run. `simulate_benchmark.py` writes a simulated benchmark in
-  the formats of the real one; `score_demo.py` scores the outputs of the paper's
-  scripts on it.
-- `download_data.py`: downloads the demo's raw data and checks the checksums.
+- `undetect/`: the model, importable as a package
+  - `kernels.py`: compound kernels (structure, targets, mechanism, Cell Painting), their weights and fusion
+  - `backbone.py`: the drug-free network that predicts a response from the control profile
+  - `model.py`: UnDetect on one fold: backbone, compound terms, context gate
+  - `metrics.py`: PCC_DEG
+- One script per pipeline step, run from the repository root by `workflow/Snakefile`:
+  `download_data.py`, `simulate_data.py`, `train.py --fold F`, `evaluate.py`
