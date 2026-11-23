@@ -24,7 +24,6 @@ platforms = [
 ]
 version = "0.1.0"
 license = "MIT"
-license-file = "LICENSE"
 repository = "https://github.com/CyclopsRay/Capstone_project"
 requires-pixi = ">=0.82.0"   # for the platform entry with `cuda`
 
