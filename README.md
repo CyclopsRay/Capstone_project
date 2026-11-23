@@ -1,6 +1,6 @@
 # UnDetect, made reproducible
 
-[![Reproduce](https://github.com/CyclopsRay/capstone_project/actions/workflows/reproduce.yml/badge.svg)](https://github.com/CyclopsRay/capstone_project/actions/workflows/reproduce.yml)
+[![Reproduce](https://github.com/CyclopsRay/Capstone_project/actions/workflows/reproduce.yml/badge.svg)](https://github.com/CyclopsRay/Capstone_project/actions/workflows/reproduce.yml)
 
 Code for **"Predicting Transcriptional Responses to Unseen Compounds through Context Modeling and Multi-View
 Transfer"** (Yuqi Lei, Hanzhe Liang, Keqin Peng, Jun Wen; RECOMB 2027 submission), set up so that anyone can install
@@ -14,8 +14,8 @@ You need [Pixi](https://pixi.sh) (one command to install, no administrator right
 Linux (x86-64) and macOS (Apple silicon) are supported; on Windows, use WSL2.
 
 ```bash
-git clone https://github.com/CyclopsRay/capstone_project.git
-cd capstone_project
+git clone https://github.com/CyclopsRay/Capstone_project.git
+cd Capstone_project
 pixi run reproduce
 ```
 
@@ -218,7 +218,7 @@ The full run writes its results under `$UNDETECT_DATA/results` and the figures t
 
 ## 7. How can I contact the authors?
 
-Open an issue on [GitHub](https://github.com/CyclopsRay/capstone_project/issues).
+Open an issue on [GitHub](https://github.com/CyclopsRay/Capstone_project/issues).
 
 ## Data
 
