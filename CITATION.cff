@@ -1,0 +1,42 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper (preferred-citation) and this repository."
+title: "UnDetect: predicting transcriptional responses to unseen compounds"
+abstract: >-
+  UnDetect predicts the transcriptional response to a compound that was never profiled in any cell line, from a
+  drug-free context backbone on the paired control profile and a multi-view compound kernel over structure,
+  targets, mechanism of action and Cell Painting morphology. This repository holds the code of the paper, its
+  Pixi environments, a Snakemake demo pipeline and a Quarto report.
+type: software
+authors:
+  - given-names: "Yuqi"
+    family-names: "Lei"
+  - given-names: "Hanzhe"
+    family-names: "Liang"
+  - given-names: "Keqin"
+    family-names: "Peng"
+  - given-names: "Jun"
+    family-names: "Wen"
+repository-code: "https://github.com/CyclopsRay/capstone_project"
+license: MIT
+version: 0.1.0
+date-released: "2026-11-23"
+keywords:
+  - transcriptomics
+  - L1000
+  - drug response prediction
+  - kernel methods
+  - reproducibility
+preferred-citation:
+  type: conference-paper
+  title: "Predicting Transcriptional Responses to Unseen Compounds through Context Modeling and Multi-View Transfer"
+  authors:
+    - given-names: "Yuqi"
+      family-names: "Lei"
+    - given-names: "Hanzhe"
+      family-names: "Liang"
+    - given-names: "Keqin"
+      family-names: "Peng"
+    - given-names: "Jun"
+      family-names: "Wen"
+  collection-title: "RECOMB 2027 (submitted)"
+  year: 2027
