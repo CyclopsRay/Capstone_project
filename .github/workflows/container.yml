@@ -1,0 +1,30 @@
+# Build the container image from pixi.lock (containers/Dockerfile) and rerun the
+# demo inside it, so the image and the laptop environment cannot drift apart.
+# Runs when the environment or the recipe changes, or by hand.
+name: Container
+
+on:
+  push:
+    paths:
+      - pixi.toml
+      - pixi.lock
+      - containers/Dockerfile
+      - .github/workflows/container.yml
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Fresh clone
+        uses: actions/checkout@v7
+
+      - name: Build the image of the default environment
+        run: docker build --platform linux/amd64 -f containers/Dockerfile --build-arg ENV_NAME=default -t undetect:ci .
+
+      - name: Run the demo inside the image
+        run: docker run --rm -v "$PWD":/work -w /work undetect:ci snakemake --cores all
+
+      - name: Show the image size
+        run: docker image ls undetect:ci
