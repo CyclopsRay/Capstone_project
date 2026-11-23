@@ -77,8 +77,9 @@ They replace the three pip requirement files of the original repository with the
 
 **Demo:** any recent laptop. Measured on a MacBook (Apple silicon): the pipeline takes about 2 minutes with the
 environment installed, at most 1 GB of memory per fold (up to about 3 GB with folds in parallel), and the
-environment needs about 1.6 GB of disk (a 350 MB download on macOS, 450 MB on Linux). On the GitHub Action
-(4 CPU cores, nothing cached), installing and running everything takes about 6 minutes.
+environment needs about 1.6 GB of disk (a 350 MB download on macOS, 450 MB on Linux). On the GitHub Action (a
+fresh Linux machine with 4 CPU cores, nothing cached), the whole job took 4 to 6 minutes in its first five runs, of
+which installing the environment took about 10 seconds; most of the rest is training the backbone on five folds.
 
 **Paper:** a Slurm cluster. The job scripts ask for 8 to 32 CPU cores and 8 to 96 GB of memory, and one GPU for the
 GPU runs. On one A100, fitting UnDetect on one fold of the drug-blind benchmark takes about 5 minutes and 5 GB of
