@@ -25,7 +25,7 @@ platforms = [
 version = "0.1.0"
 license = "MIT"
 license-file = "LICENSE"
-repository = "https://github.com/CyclopsRay/capstone_project"
+repository = "https://github.com/CyclopsRay/Capstone_project"
 requires-pixi = ">=0.82.0"   # for the platform entry with `cuda`
 
 # Default feature: the paper's `undetect` environment (envs/undetect.txt), same
